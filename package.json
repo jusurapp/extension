@@ -1,0 +1,11 @@
+{
+  "name": "jusur-extension",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "esbuild src/content/index.js --bundle --format=iife --outfile=content.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
