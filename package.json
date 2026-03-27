@@ -3,7 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "build": "esbuild src/content/index.js --bundle --format=iife --outfile=content.js"
+    "build": "esbuild src/content/index.js --bundle --format=iife --outfile=content.js",
+    "package": "npm run build && zip -r jusur.zip manifest.json background.js content.js content.css icons/"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"
