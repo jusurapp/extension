@@ -80,6 +80,23 @@ function restorePanel() {
     .addEventListener("click", handleTranslate);
 }
 
+function showAppNotRunning() {
+  const body = document.getElementById("jusur-panel-body");
+  if (!body) return;
+  body.innerHTML = `
+    <svg class="icon" viewBox="0 0 24 24" fill="currentColor" style="color:#f59e0b"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    <p class="description">The Jusur desktop app is not running. Open it and try again.</p>
+    <a class="jusur-download-link" href="https://jusur.video" target="_blank">Download Jusur</a>
+    <button id="jusur-translate-btn" style="margin-top:4px">
+      ${TRANSLATE_SVG}
+      Try again
+    </button>
+  `;
+  body
+    .querySelector("#jusur-translate-btn")
+    .addEventListener("click", handleTranslate);
+}
+
 async function handleTranslate() {
   showLoading("Translating\u2026");
 
@@ -91,13 +108,16 @@ async function handleTranslate() {
     if (response.ok) {
       startSubtitles(response.data.segments);
       showSubtitlesActive(response.data.segments);
+    } else if (response.error && response.error.includes("Failed to fetch")) {
+      console.error("[Jusur] App not running:", response.error);
+      showAppNotRunning();
     } else {
       console.error("[Jusur] Server error:", response.error);
       restorePanel();
     }
   } catch (err) {
     console.error("[Jusur] Failed to reach Jusur:", err);
-    restorePanel();
+    showAppNotRunning();
   }
 }
 
