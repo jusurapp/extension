@@ -1,25 +1,26 @@
+// YouTube and Instagram are SPAs that navigate via history state updates, so
+// we notify the content script on every in-page navigation and full load.
+const NAV_URL_FILTER = {
+  url: [{ hostContains: "youtube.com" }, { hostContains: "instagram.com" }],
+};
+
+function notifyNavigation(details) {
+  if (details.frameId === 0) {
+    chrome.tabs.sendMessage(details.tabId, {
+      type: "YT_NAVIGATION",
+      url: details.url,
+    });
+  }
+}
+
 chrome.webNavigation.onHistoryStateUpdated.addListener(
-  (details) => {
-    if (details.frameId === 0) {
-      chrome.tabs.sendMessage(details.tabId, {
-        type: "YT_NAVIGATION",
-        url: details.url,
-      });
-    }
-  },
-  { url: [{ hostContains: "youtube.com" }] },
+  notifyNavigation,
+  NAV_URL_FILTER,
 );
 
 chrome.webNavigation.onCompleted.addListener(
-  (details) => {
-    if (details.frameId === 0) {
-      chrome.tabs.sendMessage(details.tabId, {
-        type: "YT_NAVIGATION",
-        url: details.url,
-      });
-    }
-  },
-  { url: [{ hostContains: "youtube.com" }] },
+  notifyNavigation,
+  NAV_URL_FILTER,
 );
 
 // Uses a keepalive interval to prevent the MV3 service worker from being

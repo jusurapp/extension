@@ -28,6 +28,11 @@ export function startSubtitles(segments) {
   if (site === "youtube") {
     video = document.querySelector("video");
     container = document.querySelector(".html5-video-player");
+  } else if (site === "instagram") {
+    // Instagram's DOM uses generated class names, so anchor to the reel's
+    // <video> element and use its parent as the positioning container.
+    video = document.querySelector("article video") || document.querySelector("video");
+    container = video ? video.parentElement : null;
   }
 
   if (!video || !container) {
@@ -49,6 +54,10 @@ export function startSubtitles(segments) {
 
   state.subtitleOverlay = document.createElement("div");
   state.subtitleOverlay.className = "jusur-subtitle-overlay";
+  // Instagram reels are narrow and the page's root font-size is large, so the
+  // overlay needs a smaller, width-constrained sizing than YouTube.
+  if (site === "instagram")
+    state.subtitleOverlay.classList.add("jusur-ig-subtitle");
   state.subtitleOverlay.setAttribute(MARKER_ATTR, "true");
 
   state.subtitleOverlay.innerHTML = `

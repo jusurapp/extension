@@ -13,9 +13,21 @@
         "Segoe UI",
         sans-serif;
     color: #fff;
-    overflow: hidden;
     margin-bottom: 16px;
     box-sizing: border-box;
+}
+
+/* Instagram: place the panel at the top-right corner of the post. It is
+   absolutely positioned in the document (top/left set from JS), so it scrolls
+   away with the page instead of floating over it. */
+#jusur-panel.jusur-floating {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 360px;
+    max-width: calc(100vw - 16px);
+    z-index: 2147483000;
+    margin-bottom: 0;
 }
 
 #jusur-panel-header {
@@ -24,6 +36,7 @@
     justify-content: space-between;
     padding: 7px 14px;
     background: #1d1f20;
+    border-radius: 12px 12px 0 0;
 }
 
 .jusur-logo {
@@ -34,7 +47,7 @@
 }
 
 .jusur-logo svg {
-    height: 1rem;
+    height: 12px;
     width: auto;
     fill: rgba(255, 255, 255, 0.4);
 }
@@ -144,7 +157,7 @@
 
 #jusur-panel-footer {
     background: #1d1f20;
-
+    border-radius: 0 0 12px 12px;
     display: flex;
     align-items: stretch;
 }
@@ -309,7 +322,7 @@
 .jusur-subtitle-toolbar-label {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 7px;
     font-size: 13px;
     color: rgba(255, 255, 255, 0.45);
     font-family: Georgia, "Palatino Linotype", serif;
@@ -317,7 +330,7 @@
 }
 
 .jusur-subtitle-toolbar-label svg {
-    height: 1rem;
+    height: 11px;
     width: auto;
     fill: rgba(255, 255, 255, 0.4);
 }
@@ -360,13 +373,24 @@
     direction: rtl;
 }
 
+/* Instagram: portrait reels are narrow, so use a smaller fixed font (px, not
+   rem, since IG's root font-size is large) and keep the box inside the video. */
+.jusur-subtitle-overlay.jusur-ig-subtitle {
+    font-size: 18px;
+    max-width: 90%;
+}
+
 .jusur-spinner {
     width: 28px;
     height: 28px;
     border: 2px solid rgba(133, 100, 81, 0.25);
     border-top-color: #856451;
     border-radius: 50%;
-    animation: jusur-spin 0.8s linear infinite;
+    /* !important + running state defend against host pages (e.g. Instagram)
+       that ship a global reduced-motion/perf rule disabling animations. */
+    animation: jusur-spin 0.8s linear infinite !important;
+    animation-play-state: running !important;
+    will-change: transform;
 }
 
 @keyframes jusur-spin {

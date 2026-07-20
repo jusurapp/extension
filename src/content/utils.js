@@ -1,13 +1,22 @@
 export function getSite() {
   const host = window.location.hostname;
   if (host.includes("youtube.com")) return "youtube";
+  if (host.includes("instagram.com")) return "instagram";
   return null;
 }
+
+// Matches the shortcode in Instagram reel/post/tv URLs, e.g.
+// https://www.instagram.com/reel/DU-hhoniP03/ → "DU-hhoniP03".
+const IG_MEDIA_RE = /\/(?:reel|reels|p|tv)\/([^/?#]+)/;
 
 export function getVideoId() {
   const site = getSite();
   if (site === "youtube") {
     return new URLSearchParams(window.location.search).get("v");
+  }
+  if (site === "instagram") {
+    const m = window.location.pathname.match(IG_MEDIA_RE);
+    return m ? m[1] : null;
   }
   return null;
 }
@@ -15,6 +24,7 @@ export function getVideoId() {
 export function isVideoPage() {
   const site = getSite();
   if (site === "youtube") return window.location.pathname === "/watch";
+  if (site === "instagram") return IG_MEDIA_RE.test(window.location.pathname);
   return false;
 }
 

@@ -1,6 +1,6 @@
 import { state, PANEL_ID, MARKER_ATTR } from "./state.js";
 import { TRANSLATE_SVG, EYE_SVG, EYE_OFF_SVG, LOGO_SVG } from "./icons.js";
-import { parseTimestamp, formatTime } from "./utils.js";
+import { parseTimestamp, formatTime, getSite } from "./utils.js";
 import { startSubtitles } from "./subtitles.js";
 
 const LANG_STORAGE_KEY = "jusurTargetLang";
@@ -60,6 +60,8 @@ export function createPanel() {
   const panel = document.createElement("div");
   panel.id = PANEL_ID;
   panel.setAttribute(MARKER_ATTR, "true");
+  // Instagram has no in-flow sidebar, so the panel floats beside the reel.
+  if (getSite() === "instagram") panel.classList.add("jusur-floating");
 
   panel.innerHTML = `
     <div id="jusur-panel-header">
@@ -170,6 +172,16 @@ function showLoading(message) {
     <div class="jusur-spinner"></div>
     <p class="description">${message}</p>
   `;
+  // Drive the spin with the Web Animations API instead of a CSS keyframe. Some
+  // host pages (e.g. Instagram) disable CSS animations globally, which freezes
+  // a keyframe-based spinner; a script-driven animation can't be overridden.
+  const spinner = body.querySelector(".jusur-spinner");
+  if (spinner && spinner.animate) {
+    spinner.animate(
+      [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
+      { duration: 800, iterations: Infinity, easing: "linear" },
+    );
+  }
 }
 
 function restorePanel() {
