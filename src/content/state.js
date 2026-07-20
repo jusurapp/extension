@@ -10,4 +10,5 @@ export const state = {
   subtitleOverlay: null,
   subtitleVisible: true,
   showOriginal: false,
+  targetLang: "English",
 };

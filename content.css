@@ -149,10 +149,15 @@
     align-items: stretch;
 }
 
-.jusur-lang-badge {
+.jusur-lang-selector {
+    position: relative;
     align-self: center;
     margin-left: 10px;
+}
+
+.jusur-lang-badge {
     padding: 2px 7px;
+    border: none;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.07);
     font-family:
@@ -163,6 +168,56 @@
     font-size: 12px;
     color: rgba(255, 255, 255, 0.45);
     white-space: nowrap;
+    cursor: pointer;
+}
+
+.jusur-lang-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    z-index: 10;
+    min-width: 130px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px;
+    border-radius: 8px;
+    background: #2a2c2e;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.jusur-lang-menu.jusur-open {
+    display: block;
+}
+
+.jusur-lang-option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 5px;
+    background: none;
+    font-family:
+        "DM Sans",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+
+.jusur-lang-option:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.jusur-lang-option.jusur-active {
+    color: #e0b99a;
 }
 
 .jusur-footer-btn {

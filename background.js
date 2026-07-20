@@ -33,7 +33,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     fetch("http://127.0.0.1:8765/transcribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: message.url }),
+      body: JSON.stringify({ url: message.url, lang: message.lang }),
     })
       .then((res) => res.json())
       .then((data) => sendResponse({ ok: true, data }))

@@ -1,7 +1,10 @@
 import { state, PANEL_ID, MARKER_ATTR } from "./state.js";
 import { getSite, getVideoId, isVideoPage, waitForElement } from "./utils.js";
 import { stopSubtitles } from "./subtitles.js";
-import { createPanel } from "./panel.js";
+import { createPanel, loadTargetLang } from "./panel.js";
+
+// Restore the persisted translation language before any panel is injected.
+loadTargetLang();
 
 function removePanel() {
   stopSubtitles();

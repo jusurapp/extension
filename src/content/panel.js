@@ -3,6 +3,59 @@ import { TRANSLATE_SVG, EYE_SVG, EYE_OFF_SVG, LOGO_SVG } from "./icons.js";
 import { parseTimestamp, formatTime } from "./utils.js";
 import { startSubtitles } from "./subtitles.js";
 
+const LANG_STORAGE_KEY = "jusurTargetLang";
+
+// Languages the video's Arabic audio can be translated into.
+const LANGUAGES = [
+  "English",
+  "French",
+  "Spanish",
+  "German",
+  "Italian",
+  "Portuguese",
+  "Turkish",
+  "Russian",
+  "Urdu",
+  "Indonesian",
+  "Chinese",
+];
+
+// Load the persisted language choice and reflect it in the UI. Called once at
+// content-script startup so the selection survives page refreshes.
+export function loadTargetLang() {
+  try {
+    chrome.storage.local.get(LANG_STORAGE_KEY, (res) => {
+      const saved = res && res[LANG_STORAGE_KEY];
+      if (saved && LANGUAGES.includes(saved)) {
+        state.targetLang = saved;
+        refreshLangUI();
+      }
+    });
+  } catch (_) {
+    /* storage unavailable — fall back to the in-memory default */
+  }
+}
+
+function saveTargetLang(lang) {
+  try {
+    chrome.storage.local.set({ [LANG_STORAGE_KEY]: lang });
+  } catch (_) {
+    /* ignore persistence failures */
+  }
+}
+
+// Sync any visible panel to the current state.targetLang.
+function refreshLangUI() {
+  const label = document.querySelector(".jusur-lang-badge-label");
+  if (label) label.textContent = state.targetLang;
+  document.querySelectorAll(".jusur-lang-option").forEach((o) => {
+    o.classList.toggle("jusur-active", o.dataset.lang === state.targetLang);
+  });
+  const desc = document.querySelector("#jusur-panel-body .description");
+  if (desc)
+    desc.textContent = `Translate this video's audio from Arabic to ${state.targetLang}.`;
+}
+
 export function createPanel() {
   const panel = document.createElement("div");
   panel.id = PANEL_ID;
@@ -20,14 +73,19 @@ export function createPanel() {
     </div>
     <div id="jusur-panel-body">
       <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
-      <p class="description">Translate this video's audio from Arabic to English.</p>
+      <p class="description">Translate this video's audio from Arabic to ${state.targetLang}.</p>
       <button id="jusur-translate-btn">
         ${TRANSLATE_SVG}
         Translate
       </button>
     </div>
     <div id="jusur-panel-footer">
-      <span class="jusur-lang-badge">English</span>
+      <div class="jusur-lang-selector">
+        <button class="jusur-lang-badge" id="jusur-lang-badge" title="Translation language">
+          <span class="jusur-lang-badge-label">${state.targetLang}</span>
+        </button>
+        <div class="jusur-lang-menu" id="jusur-lang-menu"></div>
+      </div>
       <button class="jusur-footer-btn" id="jusur-btn-download" style="display:none">
         <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
         Download
@@ -52,7 +110,57 @@ export function createPanel() {
     .querySelector("#jusur-translate-btn")
     .addEventListener("click", handleTranslate);
 
+  setupLangSelector(panel);
+
   return panel;
+}
+
+function setupLangSelector(panel) {
+  const badge = panel.querySelector("#jusur-lang-badge");
+  const menu = panel.querySelector("#jusur-lang-menu");
+  const label = panel.querySelector(".jusur-lang-badge-label");
+
+  menu.innerHTML = LANGUAGES.map(
+    (lang) =>
+      `<button class="jusur-lang-option${lang === state.targetLang ? " jusur-active" : ""}" data-lang="${lang}">${lang}</button>`,
+  ).join("");
+
+  const closeMenu = () => {
+    menu.classList.remove("jusur-open");
+    document.removeEventListener("click", onOutsideClick);
+  };
+  const onOutsideClick = (e) => {
+    if (!menu.contains(e.target) && e.target !== badge) closeMenu();
+  };
+
+  badge.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const isOpen = menu.classList.toggle("jusur-open");
+    if (isOpen) {
+      document.addEventListener("click", onOutsideClick);
+    } else {
+      document.removeEventListener("click", onOutsideClick);
+    }
+  });
+
+  menu.querySelectorAll(".jusur-lang-option").forEach((opt) => {
+    opt.addEventListener("click", () => {
+      const lang = opt.dataset.lang;
+      closeMenu();
+      if (lang === state.targetLang) return;
+
+      state.targetLang = lang;
+      saveTargetLang(lang);
+      label.textContent = lang;
+      menu.querySelectorAll(".jusur-lang-option").forEach((o) => {
+        o.classList.toggle("jusur-active", o.dataset.lang === lang);
+      });
+
+      // If subtitles are already showing, re-run the translation in the new
+      // language; otherwise the choice applies to the next Translate click.
+      if (document.querySelector(".jusur-timeline")) handleTranslate();
+    });
+  });
 }
 
 function showLoading(message) {
@@ -69,7 +177,7 @@ function restorePanel() {
   if (!body) return;
   body.innerHTML = `
     <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
-    <p class="description">Translate this video's audio from Arabic to English.</p>
+    <p class="description">Translate this video's audio from Arabic to ${state.targetLang}.</p>
     <button id="jusur-translate-btn">
       ${TRANSLATE_SVG}
       Translate
@@ -104,6 +212,7 @@ async function handleTranslate() {
     const response = await chrome.runtime.sendMessage({
       type: "transcribe",
       url: window.location.href,
+      lang: state.targetLang,
     });
     if (response.ok) {
       startSubtitles(response.data.segments);
