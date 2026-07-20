@@ -60,8 +60,9 @@ export function createPanel() {
   const panel = document.createElement("div");
   panel.id = PANEL_ID;
   panel.setAttribute(MARKER_ATTR, "true");
-  // Instagram has no in-flow sidebar, so the panel floats beside the reel.
-  if (getSite() === "instagram") panel.classList.add("jusur-floating");
+  // Instagram has no sidebar; the panel is pinned beside the post
+  // (see anchorInstagramPanel) and this class sizes/positions it for that.
+  if (getSite() === "instagram") panel.classList.add("jusur-ig-panel");
 
   panel.innerHTML = `
     <div id="jusur-panel-header">

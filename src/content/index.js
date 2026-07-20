@@ -11,54 +11,69 @@ function removePanel() {
   document.querySelectorAll(`[${MARKER_ATTR}]`).forEach((el) => el.remove());
 }
 
-// Instagram's DOM has no stable ids, so locate the post by walking up from the
-// reel <video> until we reach an ancestor wide enough to span both the video
-// and the caption column (i.e. the whole post), stopping before the full-width
-// page wrappers.
-function findInstagramPost(video) {
-  if (!video) return null;
-  const videoWidth = video.getBoundingClientRect().width;
-  let el = video.parentElement;
-  while (el && el !== document.body) {
-    const w = el.getBoundingClientRect().width;
-    if (w > videoWidth + 200 && w < window.innerWidth - 8) return el;
-    el = el.parentElement;
-  }
-  return null;
+// Instagram renders the whole post (video + caption/comments column) as a
+// direct child <div> of the <main role="main"> landmark. Its class names are
+// minified and unstable, but the landmark is semantic, so locate the post as
+// the video's ancestor that is a direct child of <main>.
+function findInstagramPost() {
+  const video = document.querySelector("video");
+  return (video && video.closest("main > div")) || null;
 }
 
-// Place the panel at the top-right corner of the post, just outside its right
-// edge. It is absolutely positioned in the document (top/left include the
-// scroll offset), so it stays attached to the post and scrolls away with the
-// page rather than floating over it. Only re-aligns on resize (which shifts the
-// centered post horizontally). The listener removes itself once the panel
-// leaves the DOM.
-function anchorInstagramPanel(panel) {
+// Pin the panel just right of the post, in the empty margin between the post
+// and the viewport edge. It is absolutely positioned in the document (top/left
+// include the scroll offset), so it scrolls with the page instead of floating
+// over it. Re-anchors when the window or the post changes size — Instagram
+// lays the post out asynchronously and its width varies with the video's
+// aspect ratio. If the margin is too narrow to fit the panel, it is placed
+// below the post rather than overlapping it. The listeners remove themselves
+// once the panel leaves the DOM.
+function anchorInstagramPanel(panel, post) {
   const GAP = 16;
+  const resizeObserver = new ResizeObserver(() => reposition());
   function reposition() {
     if (!document.contains(panel)) {
       window.removeEventListener("resize", reposition);
+      resizeObserver.disconnect();
       return;
     }
-    const post = findInstagramPost(document.querySelector("video"));
-    if (!post) return;
+    if (!document.contains(post)) {
+      const replacement = findInstagramPost();
+      if (!replacement) return;
+      post = replacement;
+      resizeObserver.observe(post);
+    }
     const rect = post.getBoundingClientRect();
+    // The post div has inner padding, so its rect starts above the visible
+    // card, the <video> top matches where the post actually starts.
+    const video = post.querySelector("video");
+    const top = video ? video.getBoundingClientRect().top : rect.top;
     const width = panel.offsetWidth || 360;
-    const maxLeft = window.scrollX + window.innerWidth - width - 8;
-    const left = Math.min(rect.right + window.scrollX + GAP, maxLeft);
-    panel.style.left = Math.max(window.scrollX + 8, left) + "px";
-    panel.style.top = rect.top + window.scrollY + "px";
+    const fitsRight =
+      rect.right + GAP + width <= document.documentElement.clientWidth - 8;
+    if (fitsRight) {
+      panel.style.left = rect.right + window.scrollX + GAP + "px";
+      panel.style.top = top + window.scrollY + "px";
+    } else {
+      panel.style.left = rect.left + window.scrollX + "px";
+      panel.style.top = rect.bottom + window.scrollY + GAP + "px";
+    }
   }
+  resizeObserver.observe(post);
+  resizeObserver.observe(document.documentElement);
   window.addEventListener("resize", reposition);
   reposition();
-  // Re-run after layout settles (Instagram finishes rendering asynchronously).
-  setTimeout(reposition, 300);
 }
 
 function injectInstagramPanel() {
+  const post = findInstagramPost();
+  if (!post) {
+    console.warn("[Jusur] Instagram post container not found");
+    return null;
+  }
   const panel = createPanel();
   document.body.appendChild(panel);
-  anchorInstagramPanel(panel);
+  anchorInstagramPanel(panel, post);
   return panel;
 }
 
@@ -82,9 +97,9 @@ async function handleVideoPage() {
     sidebar.prepend(createPanel());
     console.log("[Jusur] Panel injected into", sidebar.id);
   } else if (site === "instagram") {
-    // Instagram's reel layout has no stable sidebar container, so the panel is
-    // pinned to the top-right corner of the post. Wait for the video so we
-    // don't inject on a not-yet-loaded page.
+    // Instagram has no sidebar container, so the panel is pinned in the
+    // margin right of the post. Wait for the video so we don't inject on a
+    // not-yet-loaded page.
     await waitForElement("video", 8000);
 
     if (document.getElementById(PANEL_ID) || state.dismissed) return;

@@ -17,10 +17,10 @@
     box-sizing: border-box;
 }
 
-/* Instagram: place the panel at the top-right corner of the post. It is
-   absolutely positioned in the document (top/left set from JS), so it scrolls
-   away with the page instead of floating over it. */
-#jusur-panel.jusur-floating {
+/* Instagram: pinned in the empty margin right of the post (top/left set from
+   JS, anchored to the post's rect). Absolutely positioned in the document, so
+   it scrolls away with the page instead of floating over it. */
+#jusur-panel.jusur-ig-panel {
     position: absolute;
     top: 0;
     left: 0;
